@@ -1,0 +1,789 @@
+/* --- Global Styles & Font --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* NEW: Updated color palette */
+  --primary-indigo: #5a3e8d;
+  --primary-indigo-dark: #482f71;
+  --light-indigo-bg: #e9e5f3;
+  --dark-text: #2c3e50;
+  --light-text: #34495e;
+  --border-color: rgba(255, 255, 255, 0.5); /* A softer border for the new look */
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  color: var(--dark-text);
+  margin: 0;
+}
+
+/* --- Main Layout Container --- */
+.homepage,
+.page-container {
+  min-height: calc(100vh - 140px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  /* NEW: A soft, colorful gradient background */
+  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+  background-attachment: fixed;
+}
+
+/* --- Header & Footer (Milky Glass Effect) --- */
+.site-header,
+.site-footer {
+  /* NEW: Semi-transparent background for a layered feel */
+  background-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  
+  padding: 1rem 2rem;
+  color: var(--dark-text);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.site-header h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-indigo);
+}
+
+.nav-link {
+  color: var(--light-text);
+  padding: 0.5rem 0.75rem;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.nav-link:hover {
+  color: var(--primary-indigo);
+  background-color: var(--light-indigo-bg);
+}
+
+.site-footer {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--light-text);
+  border-top: 1px solid var(--border-color);
+  margin-top: auto;
+}
+
+/* --- Card Styles (Milky Glass Effect) --- */
+.card,
+.dashboard-card {
+  /* NEW: Semi-transparent background */
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  
+  padding: 40px;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 400px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInCard 0.6s forwards ease-out;
+}
+
+@keyframes fadeInCard {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card:hover,
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.card h2,
+.dashboard-card h2 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--dark-text);
+}
+
+.card p,
+.dashboard-card p {
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  color: var(--light-text);
+  line-height: 1.6;
+}
+
+/* --- Reusable Button Styles --- */
+.btn {
+  display: block;
+  padding: 12px 0;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+/* Primary Button with new Indigo color */
+.btn-primary,
+.login-btn {
+  background-color: var(--primary-indigo);
+  color: #ffffff;
+}
+
+.btn-primary:hover,
+.login-btn:hover {
+  background-color: var(--primary-indigo-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(90, 62, 141, 0.3);
+}
+
+/* Secondary "Outline" Button */
+.btn-secondary,
+.signup-btn {
+  background-color: transparent;
+  color: var(--primary-indigo);
+  border: 2px solid var(--primary-indigo);
+}
+
+.btn-secondary:hover,
+.signup-btn:hover {
+  background-color: var(--light-indigo-bg);
+  color: var(--primary-indigo-dark);
+}
+
+/* --- Simple div for button containers --- */
+.buttons,
+div[style*="flex-direction: column"] {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* --- Page Titles --- */
+.page-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--dark-text);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* --- Table Styles --- */
+/* We will reuse the .dashboard-card as a container for the table */
+.dashboard-card table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.dashboard-card th {
+  padding: 12px 15px;
+  font-weight: 600;
+  color: var(--primary-indigo);
+  border-bottom: 2px solid var(--primary-indigo);
+}
+
+.dashboard-card td {
+  padding: 12px 15px;
+  color: var(--light-text);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Zebra-striping for better readability */
+.dashboard-card tbody tr:nth-child(even) {
+  background-color: rgba(233, 229, 243, 0.5); /* Faint version of --light-indigo-bg */
+}
+
+/* Remove bottom border from the last row */
+.dashboard-card tbody tr:last-child td {
+  border-bottom: none;
+}
+/* --- Dashboard Grid Layout --- */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8rem; /* Increased from 2rem */
+  width: 100%;
+  max-width: 900px;
+}
+/* On screens wider than 768px, switch to two columns */
+@media (min-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* --- Card Content Alignment --- */
+/* A new class to align card content to the left for dashboards */
+.card-left-align {
+  text-align: left;
+}
+
+.card-left-align h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--dark-text);
+  margin-bottom: 0.5rem;
+}
+
+.card-left-align p {
+  font-size: 1rem;
+  color: var(--light-text);
+  margin-bottom: 1.5rem;
+}
+
+/* --- New Accent Button Color --- */
+/* Add these to your :root variables at the top of the file */
+:root {
+  /* ... your existing variables ... */
+  --accent-green: #27ae60;
+  --accent-green-dark: #229954;
+}
+
+/* Add this new button style for the "View Results" button */
+.btn-accent {
+  background-color: var(--accent-green);
+  color: #ffffff;
+}
+
+.btn-accent:hover {
+  background-color: var(--accent-green-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+}
+
+/* --- UPDATE YOUR .btn CLASS --- */
+/* Find the existing .btn rule and update it to this, so padding works correctly on all buttons */
+.btn {
+  display: inline-block; /* Change from 'block' */
+  padding: 10px 20px; /* Change from '12px 0' */
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+/* --- Page Header Layout --- */
+/* A flex container for page titles and buttons */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 900px; /* Match the dashboard grid width */
+  margin-bottom: 1.5rem;
+}
+
+/* --- Table Action Buttons & Links --- */
+.table-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.table-actions .action-link {
+  color: var(--primary-indigo);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.table-actions .action-link:hover {
+  color: var(--primary-indigo-dark);
+  text-decoration: underline;
+}
+
+.table-actions .action-button-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #c0392b; /* A professional red for delete actions */
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1em;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.table-actions .action-button-delete:hover {
+  color: #a93226;
+  text-decoration: underline;
+}
+
+/* --- Loading Message --- */
+.loading-message {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--dark-text);
+  text-align: center;
+  padding: 4rem;
+}
+
+/* --- Quiz Container --- */
+.quiz-container {
+  width: 100%;
+  max-width: 800px; /* A wider container for quizzes */
+}
+
+/* --- Question Card Styles --- */
+.question-card {
+  /* Use the milky glass card style, but with left alignment */
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.question-card-text {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: var(--dark-text);
+}
+
+.question-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.question-option {
+  display: block;
+  padding: 12px 15px;
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  font-weight: 500;
+}
+
+.question-option:hover {
+  background-color: var(--light-indigo-bg);
+  border-color: var(--primary-indigo);
+}
+
+.question-option.selected {
+  background-color: var(--primary-indigo);
+  border-color: var(--primary-indigo-dark);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* --- Submit Button Container --- */
+.submit-quiz-container {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+/* --- Form Container Styles --- */
+.form-container {
+  /* We can reuse the card style for a consistent look */
+  width: 100%;
+  max-width: 500px; /* A bit wider for forms */
+  text-align: left; /* Override the card's default center alignment */
+}
+
+.form-container h2 {
+  text-align: center; /* Keep the title centered */
+  margin-bottom: 2rem;
+}
+/* --- Form Styles --- */
+/* A container for the form, reusing the card style */
+.form-card {
+  width: 100%;
+  max-width: 420px; /* A good width for auth forms */
+  text-align: left; /* Override card's center alignment */
+}
+
+.form-card h2 {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+
+/* --- Form Input Styles --- */
+.form-input-group {
+  margin-bottom: 1.25rem;
+  position: relative;
+}
+
+.form-input-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--dark-text);
+}
+
+.form-input-group input {
+  width: 100%;
+  padding: 12px 15px 12px 40px; /* Left padding for icon */
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  background-color: rgba(255, 255, 255, 0.7);
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  color: var(--dark-text);
+  transition: all 0.2s ease-in-out;
+}
+
+.form-input-group input:focus {
+  outline: none;
+  border-color: var(--primary-indigo);
+  box-shadow: 0 0 0 3px var(--light-indigo-bg);
+}
+
+.form-input-icon {
+  position: absolute;
+  left: 15px;
+  top: 42px; /* Adjust as needed based on label height */
+  width: 18px;
+  height: 18px;
+  color: #999;
+}
+
+/* --- Message Display Styles (for errors/success) --- */
+.message-display {
+  text-align: center;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.message-display.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.message-display.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* --- Role Selector (Student/Professor) --- */
+.role-selector-group {
+  margin-bottom: 1.5rem;
+}
+
+.role-selector-group p {
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.role-selector {
+  display: flex;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  padding: 5px;
+}
+
+.role-selector label {
+  flex: 1;
+  text-align: center;
+}
+
+.role-selector input {
+  display: none; /* Hide the actual radio button */
+}
+
+.role-selector span {
+  display: block;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Style for the selected role */
+.role-selector input:checked + span {
+  background-color: var(--primary-indigo);
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(90, 62, 141, 0.3);
+}
+
+/* --- Form Toggle Link (e.g., "Don't have an account?") --- */
+.form-toggle-text {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: var(--light-text);
+}
+
+.form-toggle-text span {
+  color: var(--primary-indigo);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.form-toggle-text span:hover {
+  text-decoration: underline;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* --- Quiz List Styles --- */
+.quiz-list {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.quiz-list-item {
+  background: rgba(255, 255, 255, 0.7);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease-in-out;
+}
+
+.quiz-list-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.quiz-list-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--dark-text);
+}
+
+.quiz-list-link {
+  font-weight: 500;
+  color: var(--primary-indigo);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.quiz-list-link:hover {
+  text-decoration: underline;
+}
+ /* --- Link-Styled Button --- */
+.btn-like-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit; /* Inherit font from parent */
+  cursor: pointer;
+  /* Reuse the style from our quiz list link */
+  font-weight: 500;
+  color: var(--primary-indigo);
+  text-decoration: none;
+}
+
+.btn-like-link:hover {
+  text-decoration: underline;
+}
+
+ /* --- New Dashboard Layout --- */
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* --- Sidebar Styles --- */
+.sidebar {
+  width: 260px;
+  background-color: #3e2d5c; /* Dark purple from image */
+  color: #ffffff;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  margin-bottom: 2.5rem;
+}
+
+.sidebar-logo {
+  font-weight: 700;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.sidebar-nav-section {
+  margin-bottom: 2rem;
+}
+
+.sidebar-nav-section h3 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #a99ec2; /* Light purple text */
+  margin-bottom: 1rem;
+  letter-spacing: 1px;
+}
+
+.sidebar-nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-nav-link {
+  color: #dcd6f0;
+  text-decoration: none;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-nav-link:hover {
+  background-color: #513e73;
+}
+
+/* Style for the active link */
+.sidebar-nav-link.active {
+  background-color: #7b65a5;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.sidebar-footer {
+  margin-top: auto; /* Pushes logout to the bottom */
+}
+
+.logout-button {
+  background-color: #c93b5a;
+  color: #ffffff;
+  border: none;
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  transition: background-color 0.2s ease;
+}
+
+.logout-button:hover {
+  background-color: #ad324d;
+}
+
+
+/* --- Main Content Area Styles --- */
+.main-content {
+  flex-grow: 1; /* Takes up remaining space */
+  background-color: #f4f7f9;
+  padding: 2rem 3rem;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.top-bar h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--dark-text);
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+/* --- New Generate Quiz Card Style --- */
+.generate-quiz-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 60vh;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0e0e0;
+}
+
+.generate-quiz-icon {
+  width: 60px;
+  height: 60px;
+  background-color: #e9e5f3;
+  color: var(--primary-indigo);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.generate-quiz-card h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.generate-quiz-card p {
+  color: var(--light-text);
+  max-width: 300px;
+}
+
+/* --- Main Content Area Styles --- */
+.main-content {
+  flex-grow: 1; /* This is the key property */
+  background-color: #f4f7f9;
+  padding: 2rem 3rem;
+  width: 100%; /* Add this to help with layout calculations */
+}
+
+/* --- Table/Wide Card Overrides --- */
+
+/* This class overrides the default small card width */
+.card.table-container {
+  max-width: 100%;      /* Allow it to fill the screen */
+  width: 100%;          /* Force full width */
+  padding: 0;           /* Remove padding from the card wrapper so the scrollbar hits the edge */
+  overflow: hidden;     /* Keeps the border radius clean */
+}
+
+/* Ensure the internal table styling from the previous step works with CSS */
+.card.table-container .custom-table {
+  width: 100%;
+  min-width: 800px;     /* Ensures the table doesn't squish on small screens */
+}
