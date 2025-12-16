@@ -34,4 +34,3 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'default-dev-secret-key')
     DEBUG = True
     SESSION_COOKIE_SECURE = True  
-    

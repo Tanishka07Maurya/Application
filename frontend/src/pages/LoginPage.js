@@ -12,12 +12,13 @@ const FormInput = ({ label, type, name, value, onChange, placeholder, icon }) =>
         <input id={name} type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} required />
     </div>
 );
-
+//prii
 const MessageDisplay = ({ message, type }) => {
     if (!message) return null;
+    // ✅ FIX: Added backticks (`) inside the curly braces
     return <div className={`message-display ${type}`}>{message}</div>;
 };
-
+//prii
 // --- Main LoginPage Component ---
 export default function LoginPage() {
     const navigate = useNavigate();

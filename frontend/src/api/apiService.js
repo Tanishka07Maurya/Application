@@ -1,15 +1,19 @@
+
 import axios from 'axios';
 
 // const API_BASE_URL = 'http://localhost:5000/'; // Flask backend URL
 // const API_BASE_URL = '/'; 
 // future-proof line for both environments:
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/';
 
+const API_URL = 'http://localhost:5000/api/questions'; //Vaidehi Changes
 // Generic API service
 export const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
 });
+// import { api } from './index';
+
 
 // Auth endpoints
 export const loginUser = (data) => api.post('/auth/login', data);
@@ -25,3 +29,22 @@ export const fetchQuestions = () => api.get('/prof/questions');
 export const addQuestion = (data) => api.post('/prof/add_questions', data);
 export const updateQuestion = (id, data) => api.put(`/prof/update_question/${id}`, data);
 export const deleteQuestion = (id) => api.delete(`/prof/questions/${id}`);
+export const fetchQuestionById = (id) => api.get(`/prof/questions/${id}`);//Vaidehi Changes
+
+
+// --- Dropdown API Calls (Add these to the bottom of apiService.js) ---
+
+// 1. Get schools
+export const fetchSchools = () => api.get('/prof/schools');
+
+// 2. Get Programs (linked to schools)
+export const fetchPrograms = (schoolId) => api.get(`/prof/programs?school_id=${schoolId}`);
+
+// 3. Get Departments (linked to Program)
+export const fetchDepartments = (programId) => api.get(`/prof/departments?program_id=${programId}`);
+
+// 4. Get Courses (linked to Dept & Semester)
+export const fetchCourses = (deptId, semester) => api.get(`/prof/courses?dept_id=${deptId}&semester=${semester}`);
+
+// 5. Get Questions (linked to Course)
+export const fetchQuestionsByCourse = (courseId) => api.get(`/prof/questions?course_id=${courseId}`);

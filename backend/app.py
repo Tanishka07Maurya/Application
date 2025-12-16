@@ -3,6 +3,12 @@ from flask_cors import CORS
 from .config import Config
 import os
 
+# Register Blueprints
+from .routes.auth import auth_bp
+# from .routes.professor import professor_bp
+from .routes.student import student_bp
+from backend.routes.professor import professor_bp #vaidehi changes
+
 FRONTEND_BUILD_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'build'
 )
@@ -25,9 +31,11 @@ def create_app(config_class=Config):
     print(f"DB_PORT: {app.config.get('DB_PORT')}")
     print("=" * 50)
     app.config.update(
-        SESSION_COOKIE_SECURE = True,
-        SESSION_COOKIE_SAMESITE = 'None',
-        SESSION_COOKIE_HTTPONLY = True,
+        SESSION_COOKIE_SECURE = False,        # True for HTTPS
+        SESSION_COOKIE_SAMESITE = 'Lax',    # 'None' for cross-site
+        SESSION_COOKIE_HTTPONLY = False,      # True to prevent JS access
+        SESSION_PERMANENT = False,          # Session expires on browser close
+        SESSION_COOKIE_NAME = 'quiz_portal_session_new_v2',      # Custom cookie name
     )
     
     FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5000')
@@ -44,10 +52,7 @@ def create_app(config_class=Config):
          origins=ALLOWED_ORIGINS, 
          supports_credentials=True)
     
-    # Register Blueprints
-    from .routes.auth import auth_bp
-    from .routes.professor import professor_bp
-    from .routes.student import student_bp
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(professor_bp, url_prefix='/prof')
     app.register_blueprint(student_bp, url_prefix='/student')

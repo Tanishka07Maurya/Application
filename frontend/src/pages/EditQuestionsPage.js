@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from 'react';
+// import { useNavigate } from 'react-router-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import FormInput from '../components/forms/FormInput';
 import Button from '../components/forms/Button';
-import { addQuestion, updateQuestion, fetchQuestions } from '../api/apiService';
+import { 
+    addQuestion, 
+    updateQuestion, 
+    fetchQuestionById 
+} from '../api/apiService'; //vaidehi changes
 
+import axios from 'axios'; //Vaidehi Changes
 export default function EditQuestionPage({ isNew }) {
   const { questionId } = useParams();
+  const navigate = useNavigate(); //prii
 
   const [formData, setFormData] = useState({ 
     text: '', 
@@ -18,22 +25,24 @@ export default function EditQuestionPage({ isNew }) {
     if (!isNew && questionId) {
       const loadQuestion = async () => {
         try {
-          const res = await fetchQuestions();
-          const q = res.data.find((item) => item.id === parseInt(questionId));
+          const res = await fetchQuestionById(questionId);//Vaidehi Changes
+          const q = res.data;
           if (q) {
-            const loadedOptions = q.options || [];
+            
+            const loadedOptions = q.options || []; //Vaidehi Changes
             while (loadedOptions.length < 4) loadedOptions.push("");
 
-            const correctIndex = loadedOptions.indexOf(q.correct);
-
+            
             setFormData({
-              text: q.text,
-              options: loadedOptions,
-              correct: correctIndex > -1 ? correctIndex.toString() : '', 
+                text: q.text,
+                options: loadedOptions,
+                correct: q.correct, 
             });
-          }
+        }
+          
+
         } catch (err) {
-          console.error(err);
+          console.error("Error loading question:",err);
         }
       };
       loadQuestion();

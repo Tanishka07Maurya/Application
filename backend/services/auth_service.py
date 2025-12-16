@@ -122,6 +122,9 @@ class AuthService:
             master_id = self._validate_master_account(email, role_name, cursor)
             user_record['master_id'] = master_id
 
+            # FIX: Remove the large hash before creating the User object
+            user_record.pop('password_hash', None)
+
             return User.from_dict(user_record)
         finally:
             cursor.close()
@@ -150,6 +153,9 @@ class AuthService:
             role_name = user_record['role']
             master_id = self._validate_master_account(user_record['email'], role_name, cursor)
             user_record['master_id'] = master_id
+
+            # FIX: Remove the large hash before creating the User object
+            user_record.pop('password_hash', None)
 
             return User.from_dict(user_record)
         finally:

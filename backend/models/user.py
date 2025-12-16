@@ -1,5 +1,5 @@
 """Models of the application."""
-
+# Vaidehi Changes
 # User Object for Sign Up/In and Session
 class User:
     def __init__(self, id, username, email, password_hash, role=None, master_id=None):

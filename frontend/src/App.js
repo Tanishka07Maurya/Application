@@ -13,6 +13,7 @@ import ViewQuizzesPage from './pages/ViewQuizzesPage';
 import ViewQuestionsPage from './pages/ViewQuestionsPage';
 import EditQuestionsPage from './pages/EditQuestionsPage';
 import ResultsPage from './pages/ResultsPage';
+import GenerateQuizPage from './pages/GenerateQuizPage';
 
 // ✅ 1. IMPORT THE NEW LAYOUT COMPONENT
 import ProfessorLayout from './components/layout/ProfessorLayout';
@@ -28,6 +29,7 @@ function App() {
         <Route path="/student/dashboard" element={<StudentDashboard />} />
         <Route path="/quiz/:quizId" element={<QuizPage />} />
         <Route path="/student/results" element={<ResultsPage role="student" />} />
+         
 
         {/* --- Professor Routes (Now wrapped in the new layout) --- */}
         {/* ✅ 2. WRAP all professor pages inside the ProfessorLayout route */}
@@ -38,8 +40,10 @@ function App() {
           <Route path="questions/add" element={<EditQuestionsPage isNew />} />
           <Route path="questions/edit/:questionId" element={<EditQuestionsPage />} />
           <Route path="results" element={<ResultsPage role="professor" />} />
+          
 
-          <Route path="generate-quiz" element={<h1>Generate Quiz Page</h1>} />
+          <Route path="generate-quiz" element={<GenerateQuizPage />} />
+          
 
           {/* You will need to create components for these new pages */}
           <Route path="students" element={<h1>Manage Students Page</h1>} />
