@@ -103,10 +103,12 @@ class AuthService:
             user_record = cursor.fetchone()
 
             if not user_record:
+                print(f"DEBUG: No user_account record found for email: {email}")
                 return None
 
             stored_hash = user_record.pop('password_hash')
             if not self._check_password(stored_hash, password):
+                print(f"DEBUG: Password mismatch for email: {email}")
                 return None
 
             # 2. Map role_id to role name

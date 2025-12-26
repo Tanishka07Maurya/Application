@@ -115,8 +115,14 @@ export default function EditQuestionPage({ isNew }) {
             alert("Question saved successfully!");
             navigate('/professor/questions'); // Redirect after save
         } else {
-             // If you implement update logic later
-             // await updateQuestion(questionId, dataToSend);
+            // Call update API and include course_id so mapping is updated
+            const res = await updateQuestion(questionId, dataToSend);
+            if (res && res.status === 200) {
+                alert('Question updated successfully!');
+                navigate('/professor/questions');
+            } else {
+                alert('Failed to update question.');
+            }
         }    //  ❤️❤️❤️❤️❤️
     } catch (error) {
         console.error("Failed to add question:", error.response ? error.response.data : error.message);

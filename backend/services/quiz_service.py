@@ -142,49 +142,67 @@ def insert_question(form_data, teacher_id):
         conn.close()
 
 # 2. Database fetch all questions
-def fetch_questions(employee_id, fetch_scope='creator'):
+def fetch_questions(employee_id, fetch_scope='creator', course_id=None):
+    """Fetches questions created by an employee. If course_id is provided, filters by course."""
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor) 
-    
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+
     if not employee_id and fetch_scope == 'creator':
-        return []
-    
+        return {}
+
     try:
-        # Select the course_id from dropdown and connect here
-        course_id = 21 # for now
         emp_id = employee_id
-        # Fetch questions based on employee and course
-        select_clause = """
-            SELECT 
-                qb.id AS question_id,
-                qb.question_txt,
-                qb.unit, 
-                am.id AS option_id,
-                am.option_text,
-                am.is_correct
-            FROM
-                question_bank qb
-            JOIN
-                answer_map am ON qb.id = am.question_id
-            JOIN
-                question_employee qe ON qb.id = qe.question_id
-            JOIN
-                question_course qc ON qb.id = qc.question_id
-            WHERE
-                qe.employee_id = %s 
-                AND qc.course_id = %s
-        """
 
-        select_params = (emp_id, course_id)
-        print(f"DEBUG: SQL Params: {select_params}, Types: {type(emp_id), type(course_id)}")
+        # Build query dynamically depending on whether a course filter was provided
+        if course_id:
+            select_clause = """
+                SELECT 
+                    qb.id AS question_id,
+                    qb.question_txt,
+                    qb.unit, 
+                    am.id AS option_id,
+                    am.option_text,
+                    am.is_correct
+                FROM
+                    question_bank qb
+                JOIN
+                    answer_map am ON qb.id = am.question_id
+                JOIN
+                    question_employee qe ON qb.id = qe.question_id
+                JOIN
+                    question_course qc ON qb.id = qc.question_id
+                WHERE
+                    qe.employee_id = %s 
+                    AND qc.course_id = %s
+            """
+            cursor.execute(select_clause, (emp_id, course_id))
+        else:
+            # No course filter — return all questions created by this employee
+            select_clause = """
+                SELECT 
+                    qb.id AS question_id,
+                    qb.question_txt,
+                    qb.unit, 
+                    am.id AS option_id,
+                    am.option_text,
+                    am.is_correct
+                FROM
+                    question_bank qb
+                JOIN
+                    answer_map am ON qb.id = am.question_id
+                JOIN
+                    question_employee qe ON qb.id = qe.question_id
+                WHERE
+                    qe.employee_id = %s
+            """
+            cursor.execute(select_clause, (emp_id,))
 
-        cursor.execute(select_clause, (emp_id, course_id)) 
         results = cursor.fetchall()
 
     except Exception as e:
         print(f"Query failed to execute: {e}")
-        return []
-        
+        return {}
+    
     finally:
         cursor.close()
         conn.close()
@@ -192,16 +210,16 @@ def fetch_questions(employee_id, fetch_scope='creator'):
     questions_with_options = {}
 
     for row in results:
-        q_id = row['question_id'] 
-        
+        q_id = row['question_id']
+
         if q_id not in questions_with_options:
             questions_with_options[q_id] = {
                 'question_id': q_id,
                 'question_txt': row['question_txt'],
                 'unit': row['unit'],
-                'options': [] 
+                'options': []
             }
-        
+
         questions_with_options[q_id]['options'].append({
             'option_id': row['option_id'],
             'option_text': row['option_text'],
@@ -214,21 +232,23 @@ def fetch_questions(employee_id, fetch_scope='creator'):
 # Vaidehi Changes
 
 def get_question_by_id(question_id):
-    """Fetches a single question and its options from the database by ID."""
+    """Fetches a single question and its options from the database by ID and returns course mapping."""
     conn = get_db_connection()
     # Use DictCursor to get results as dictionaries
     cursor = conn.cursor(pymysql.cursors.DictCursor)
     
     try:
-        # SQL to join the question with all its options and correct flag
+        # SQL to join the question with all its options and correct flag and course mapping
         sql = """
             SELECT 
                 qb.id AS question_id,
                 qb.question_txt, 
                 am.option_text,
-                am.is_correct
+                am.is_correct,
+                qc.course_id
             FROM question_bank qb
             JOIN answer_map am ON qb.id = am.question_id
+            LEFT JOIN question_course qc ON qb.id = qc.question_id
             WHERE qb.id = %s
         """
         cursor.execute(sql, (question_id,))
@@ -242,7 +262,8 @@ def get_question_by_id(question_id):
             # Use 'question_txt' from DB and map to 'text' for the frontend state
             'text': results[0]['question_txt'], 
             'options': [],
-            'correct': '' # Will hold the index (0, 1, 2, 3) as a string
+            'correct': '', # Will hold the index (0, 1, 2, 3) as a string
+            'course_id': results[0].get('course_id') if results[0].get('course_id') else ''
         }
         
         # Collect options and find the correct one
@@ -277,7 +298,8 @@ def get_question_by_id(question_id):
         conn.close()    
 
 def update_question(question_id, data):
-    """Updates the question text and re-saves all options/answers in a transaction."""
+    """Updates the question text and re-saves all options/answers in a transaction.
+    Also updates the question->course mapping if 'course_id' is provided in the payload."""
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -297,6 +319,14 @@ def update_question(question_id, data):
         VALUES (%s, %s, %s)
     """
 
+    # 4. SQL for updating course mapping
+    sql_delete_qc = """
+        DELETE FROM question_course WHERE question_id = %s
+    """
+    sql_insert_qc = """
+        INSERT INTO question_course (question_id, course_id) VALUES (%s, %s)
+    """
+
     try:
         # Start Transaction
         conn.begin()
@@ -308,7 +338,7 @@ def update_question(question_id, data):
         cursor.execute(sql_delete_options, (question_id,))
 
         # --- Insert New Options ---
-        correct_index = int(data['correct_index'])
+        correct_index = int(data.get('correct_index', -1))
         
         # Note: We use data['options'] which includes the empty strings for up to 4 options
         for index, option_text in enumerate(data['options']):
@@ -323,6 +353,11 @@ def update_question(question_id, data):
                 option_text,
                 is_correct_flag,
             ))
+
+        # --- Update course mapping if provided ---
+        if 'course_id' in data and data['course_id']:
+            cursor.execute(sql_delete_qc, (question_id,))
+            cursor.execute(sql_insert_qc, (question_id, data['course_id']))
             
         # Commit all changes if successful
         conn.commit()
@@ -338,7 +373,9 @@ def update_question(question_id, data):
         conn.close()
 
 def fetch_questions_by_course(course_id):
-    """Fetches full question details for a specific course ID."""
+    """Fetches full question details for a specific course ID.
+    Returns list of objects: { question_id, question_txt, options: [{option_text,is_correct}, ...] }
+    """
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
     try:
@@ -363,8 +400,8 @@ def fetch_questions_by_course(course_id):
             q_id = row['question_id']
             if q_id not in questions:
                 questions[q_id] = {
-                    'id': q_id,
-                    'text': row['question_txt'],
+                    'question_id': q_id,
+                    'question_txt': row['question_txt'],
                     'options': []
                 }
             questions[q_id]['options'].append({
@@ -380,6 +417,38 @@ def fetch_questions_by_course(course_id):
         conn.close()
 
 # 3. Generate and Save Quiz  ❤️❤️❤️❤️❤️
+
+def get_professor_quizzes(teacher_id):
+    """Returns a list of quizzes created by the professor with basic metadata."""
+    conn = get_db_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    try:
+        sql = """
+            SELECT id, quiz_title, quiz_link, quiz_token, course_id, quiz_status, created_at
+            FROM quizzes WHERE teacher_id = %s ORDER BY id DESC
+        """
+        cursor.execute(sql, (teacher_id,))
+        rows = cursor.fetchall()
+        quizzes = []
+        for r in rows:
+            quizzes.append({
+                'id': r['id'],
+                'quiz_title': r.get('quiz_title'),
+                'quiz_link': r.get('quiz_link'),
+                'token': r.get('quiz_token'),
+                'course_id': r.get('course_id'),
+                'status': r.get('quiz_status'),
+                'created_at': r.get('created_at')
+            })
+        return quizzes
+    except Exception as e:
+        print(f"Error fetching professor quizzes: {e}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()
+
+
 def generate_and_save_quiz(teacher_id, course_id):
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
