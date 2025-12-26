@@ -14,14 +14,14 @@ export const loginUser = (data) => api.post('/auth/login', data);
 export const registerUser = (data) => api.post('/auth/signup', data); 
 
 // Quiz endpoints
-export const fetchQuizzes = () => api.get('/quizzes');
+export const fetchQuizzes = () => api.get('/prof/quizzes');
 export const fetchQuizById = (id) => api.get(`/quizzes/${id}`);
 export const submitQuiz = (id, data) => api.post(`/quizzes/${id}/submit`, data);
 
 // Professor endpoints
 export const fetchQuestions = () => api.get('/prof/questions');
 export const addQuestion = (data) => api.post('/prof/add_questions', data);
-export const updateQuestion = (id, data) => api.put(`/prof/update_question/${id}`, data);
+export const updateQuestion = (id, data) => api.put(`/prof/questions/${id}`, data);
 export const deleteQuestion = (id) => api.delete(`/prof/questions/${id}`);
 export const fetchQuestionById = (id) => api.get(`/prof/questions/${id}`);//Vaidehi Changes
 
@@ -40,7 +40,7 @@ export const fetchDepartments = (programId) => api.get(`/prof/departments?progra
 export const fetchCourses = (deptId, semester) => api.get(`/prof/courses?dept_id=${deptId}&semester=${semester}`);
 
 // 5. Get Questions (linked to Course)
-export const fetchQuestionsByCourse = (courseId) => api.get(`/prof/questions?course_id=${courseId}`);
+export const fetchQuestionsByCourse = (courseId) => api.get(`/prof/questions/by_course/${courseId}`);
 
 // 6. Generate Quiz for selected Course
 export const generateQuiz = (courseId) => api.post('/prof/generate', { course_id: courseId });

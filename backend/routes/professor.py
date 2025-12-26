@@ -33,7 +33,7 @@ def get_quizzes_api():
         if not teacher_id:
             return jsonify({"message": "User ID not found in session. Please log in again."}), 400
         
-        quizzes = quiz_service.get_professor_quizzes(session.get(teacher_id))
+        quizzes = quiz_service.get_professor_quizzes(teacher_id)
         return jsonify(quizzes), 200
     except Exception as e:
         return jsonify({"message": f"Error fetching quizzes: {str(e)}"}), 500
@@ -47,19 +47,25 @@ def add_question_api():
     print(f"Request data: {data}")
     
     # --- Data Validation Checks ---
-    required_keys = ['text', 'options', 'correct_index']
+    required_keys = ['text', 'options', 'correct_index', 'course_id']
     if not all(key in data for key in required_keys):
-        return jsonify({"message": f"Missing required fields"}), 400
+        return jsonify({"message": "Missing required fields"}), 400
 
     try:
         teacher_id = session.get('id')
         if not teacher_id:
             return jsonify({"message": "User ID not found in session. Please log in again."}), 400
         
-        # quiz_service.insert_questions(data, session.get('email'))
+        # Ensure course_id is present
+        if not data.get('course_id'):
+            return jsonify({"message": "course_id is required"}), 400
+
         quiz_service.insert_question(data, teacher_id)
         return jsonify({"message": "Question added successfully!"}), 201
         
+    except ValueError as ve:
+        print(f"Validation Error: {ve}")
+        return jsonify({"message": str(ve)}), 400
     except Exception as e:
         print(f"Error during question insertion: {str(e)}")
         return jsonify({"message": "Internal server error during database operation."}), 500
@@ -114,7 +120,11 @@ def get_questions_api():
         if not employee_id:
             return jsonify({"message": "User ID not found in session."}), 400
 
-        questions = quiz_service.fetch_questions(employee_id, fetch_scope='creator')
+        # allow optional course filter via query param ?course_id=###
+        course_id_raw = request.args.get('course_id')
+        course_id = int(course_id_raw) if course_id_raw else None
+
+        questions = quiz_service.fetch_questions(employee_id, fetch_scope='creator', course_id=course_id)
         if questions is None:
             print("WARNING: quiz_service.fetch_questions returned None. Returning empty object {}")
             questions = {}

@@ -39,7 +39,9 @@ def login():
     if not all([email, password]):
         return jsonify({"message": "Missing email or password"}), 400
 
+    print(f"DEBUG: Login attempt for email: {email}")
     user = auth_service.authenticate_user(email, password)
+    print(f"DEBUG: Auth service returned: {'user found' if user else 'no user / invalid credentials'}")
 
     if user:
         master_id = getattr(user, 'master_id', None)
