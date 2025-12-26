@@ -243,7 +243,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { 
-  fetchSchools, fetchPrograms, fetchDepartments, fetchCourses 
+  fetchSchools, fetchPrograms, fetchDepartments, fetchCourses, generateQuiz 
 } from '../api/apiService'; 
 import Button from '../components/forms/Button'; 
 
@@ -324,22 +324,33 @@ export default function GenerateQuizPage() {
     setSelections({ ...selections, course: e.target.value });
   };
 
-  // --- GENERATE QUIZ LOGIC ---
-  const handleGenerateQuiz = async () => {
+  // --- GENERATE QUIZ LOGIC ---❤️❤️❤️❤️❤️
+ // src/pages/GenerateQuizPage.js
+const handleGenerateQuiz = async () => {
     if (!selections.course) {
         alert("Please select a course first.");
         return;
     }
     setLoading(true);
-    
-    // Simulate generation (Replace with real API call later)
-    setTimeout(() => {
-        const fakeUniqueId = Math.random().toString(36).substring(7);
-        const link = `https://quiz-app-mccn.onrender.com/quiz/${selections.course}-${fakeUniqueId}`;
-        setGeneratedLink(link);
+    try {
+        // 🚀 Use the centralized API instance instead of manual fetch
+        const res = await generateQuiz(selections.course);
+
+        if (res.status === 201) {
+            setGeneratedLink(res.data.quiz_link); 
+            alert("Quiz generated and saved successfully!");
+        }
+    } catch (error) {
+        if (error.response && error.response.status === 403) {
+            alert("Session expired. Please log in again.");
+        } else {
+            console.error("Generation failed:", error);
+            alert("Failed to generate quiz. Ensure questions exist for this course.");
+        }
+    } finally {
         setLoading(false);
-    }, 1500);
-  };
+    }
+};
 
   return (
     <main className="main-content" style={styles.mainContainer}>

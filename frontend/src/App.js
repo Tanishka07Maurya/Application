@@ -14,6 +14,7 @@ import ViewQuestionsPage from './pages/ViewQuestionsPage';
 import EditQuestionsPage from './pages/EditQuestionsPage';
 import ResultsPage from './pages/ResultsPage';
 import GenerateQuizPage from './pages/GenerateQuizPage';
+import QuizPreviewPage from './pages/QuizPreviewPage';
 
 // ✅ 1. IMPORT THE NEW LAYOUT COMPONENT
 import ProfessorLayout from './components/layout/ProfessorLayout';
@@ -26,25 +27,26 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+
+        {/* Student Routes */}
         <Route path="/student/dashboard" element={<StudentDashboard />} />
         <Route path="/quiz/:quizId" element={<QuizPage />} />
         <Route path="/student/results" element={<ResultsPage role="student" />} />
-         
 
+        <Route path="/take-quiz/:token" element={<QuizPreviewPage />} />
+         
         {/* --- Professor Routes (Now wrapped in the new layout) --- */}
         {/* ✅ 2. WRAP all professor pages inside the ProfessorLayout route */}
         <Route path="/professor" element={<ProfessorLayout />}>
           <Route path="dashboard" element={<ProfessorDashboard />} />
           <Route path="quizzes" element={<ViewQuizzesPage />} />
           <Route path="questions" element={<ViewQuestionsPage />} />
+
           <Route path="questions/add" element={<EditQuestionsPage isNew />} />
           <Route path="questions/edit/:questionId" element={<EditQuestionsPage />} />
-          <Route path="results" element={<ResultsPage role="professor" />} />
-          
-
+          <Route path="results" element={<ResultsPage role="professor" />} />      
           <Route path="generate-quiz" element={<GenerateQuizPage />} />
           
-
           {/* You will need to create components for these new pages */}
           <Route path="students" element={<h1>Manage Students Page</h1>} />
           <Route path="analytics" element={<h1>Analytics Page</h1>} />

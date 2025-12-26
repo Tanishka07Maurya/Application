@@ -1,19 +1,13 @@
-
 import axios from 'axios';
 
-// const API_BASE_URL = 'http://localhost:5000/'; // Flask backend URL
-// const API_BASE_URL = '/'; 
-// future-proof line for both environments:
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/';
 
 const API_URL = 'http://localhost:5000/api/questions'; //Vaidehi Changes
-// Generic API service
+
 export const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
 });
-// import { api } from './index';
-
 
 // Auth endpoints
 export const loginUser = (data) => api.post('/auth/login', data);
@@ -31,7 +25,6 @@ export const updateQuestion = (id, data) => api.put(`/prof/update_question/${id}
 export const deleteQuestion = (id) => api.delete(`/prof/questions/${id}`);
 export const fetchQuestionById = (id) => api.get(`/prof/questions/${id}`);//Vaidehi Changes
 
-
 // --- Dropdown API Calls (Add these to the bottom of apiService.js) ---
 
 // 1. Get schools
@@ -48,3 +41,12 @@ export const fetchCourses = (deptId, semester) => api.get(`/prof/courses?dept_id
 
 // 5. Get Questions (linked to Course)
 export const fetchQuestionsByCourse = (courseId) => api.get(`/prof/questions?course_id=${courseId}`);
+
+// 6. Generate Quiz for selected Course
+export const generateQuiz = (courseId) => api.post('/prof/generate', { course_id: courseId });
+
+// 7. Fetch Quiz details by token for preview
+export const fetchQuizPreview = (token) => api.get(`/prof/quiz-preview/${token}`);
+
+// 8. Fetch courses specifically for the logged-in teacher
+export const fetchTeacherCourses = () => api.get('/prof/my-courses');

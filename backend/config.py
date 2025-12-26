@@ -31,6 +31,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Flask
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'default-dev-secret-key')
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'a_new_secret_key_to_break_the_old_cookie_12345')
     DEBUG = True
     SESSION_COOKIE_SECURE = True  
+    

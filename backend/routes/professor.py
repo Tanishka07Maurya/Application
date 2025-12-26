@@ -1,3 +1,4 @@
+
 from flask import Blueprint, session, redirect, url_for, flash, jsonify, request
 from ..services import quiz_service # Import the quiz logic
 from ..services.auth_service import AuthService # Import to get user data if needed
@@ -22,53 +23,7 @@ def professor_required(f):
     wrap.__name__ = f.__name__
     return wrap
 
-@professor_bp.route('/data', methods=['GET'])
-@professor_required
-def get_professor_data():
-    user_id = session.get('id')
-    if not user_id:
-        return jsonify({"message": "User ID not found in session."}), 401
-    
-    user_record = AuthService().get_user_by_id(user_id)
-    
-    if user_record:
-        return jsonify({
-            "isLoggedIn": True,
-            "username": user_record.username,
-            "email": user_record.email,
-            "role": session.get('role'),
-        }), 200
-    
-    return jsonify({"message": "User not found"}), 404
-
 # --- API Endpoints for React ---
-# 1. API to check session and get user data
-@professor_bp.route('/programs', methods=['GET'])
-@professor_required
-def get_programs_api_view(id=None): # Renamed to 'get_programs_api_view' to be safe
-    school_id_raw = request.args.get('school_id')
-    if not school_id_raw:
-        return jsonify([]), 200
-    
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-    
-    try:
-        school_id_int = int(school_id_raw)
-        
-        # Ensure 'program' table name is correct based on your workbench image
-        sql = "SELECT id, program_name FROM program WHERE school_id = %s"
-        cursor.execute(sql, (school_id_int,))
-        
-        data = cursor.fetchall()
-        return jsonify(data), 200
-    except Exception as e:
-        print(f"Error fetching programs: {e}")
-        return jsonify({"message": "Database error"}), 500
-    finally:
-        cursor.close()
-        conn.close()
-
 # 2. API to view all quizzes 
 @professor_bp.route('/quizzes', methods=['GET'])
 @professor_required
@@ -109,22 +64,46 @@ def add_question_api():
         print(f"Error during question insertion: {str(e)}")
         return jsonify({"message": "Internal server error during database operation."}), 500
 
-# 4. API to generate a quiz
+# 4. API to generate a quiz ❤️❤️❤️❤️❤️❤️❤️
 @professor_bp.route('/generate', methods=['POST'])
 @professor_required
 def generate_quiz_api():
     try:
         teacher_id = session.get('id')
+        data = request.get_json()
+        course_id = data.get('course_id') # Get course from frontend selection
+
         if not teacher_id:
-            return jsonify({"message": "User ID not found in session. Please log in again."}), 400
+            return jsonify({"message": "User ID not found"}), 400
         
-        quiz_id = quiz_service.generate_and_save_quiz(teacher_id)
+        # Pass both teacher and course to the service
+        quiz_data = quiz_service.generate_and_save_quiz(teacher_id, course_id)
+
+        if not quiz_data:
+            return jsonify({"message": "No questions found for this course."}), 404
+        
         return jsonify({
-            "message": "Quiz generated and saved for review.",
-            "quiz_id": quiz_id
+            "message": "Quiz generated and saved successfully.",
+            "quiz_link": quiz_data['quiz_link'],
+            "quiz_id": quiz_data['id']
         }), 201
     except Exception as e:
         return jsonify({"message": f"Quiz generation failed: {str(e)}"}), 500
+    
+# 4. API to fetch quiz preview data ❤️❤️❤️❤️❤️
+@professor_bp.route('/quiz-preview/<token>', methods=['GET'])
+@professor_required
+def get_quiz_preview_api(token):
+    try:
+        quiz_data = quiz_service.get_quiz_preview_details(token)
+        
+        if not quiz_data:
+            return jsonify({"message": "Quiz not found or invalid token"}), 404
+            
+        return jsonify(quiz_data), 200
+    except Exception as e:
+        print(f"Preview Error: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
 
 # 5. API to fetch questions for quiz creation
 @professor_bp.route('/questions', methods=['GET'])
@@ -144,28 +123,89 @@ def get_questions_api():
     except Exception as e:
         return jsonify({"message": f"Error fetching questions: {str(e)}"}), 500
     
-    #adding my code👌👌👌👌👌👌👌👌👌
-    # --- PASTE THIS AT THE BOTTOM OF routes/professor.py ---
+    
 # Vaidehi Changes
-
-# 6. API to fetch questions by course for quiz creation
-@professor_bp.route('/questions/by_course/<int:course_id>', methods=['GET'])
+# 6. API to fetch/update a single question
+@professor_bp.route('/questions/<int:id>', methods=['GET', 'PUT'])
 @professor_required
-def get_questions_by_course_api(course_id):
-    try:
-        # Call the new service function
-        questions_list = fetch_questions_by_course(course_id)
-        
-        if not questions_list:
-            return jsonify({"message": "No questions found for this course."}), 200
+def handle_single_question(id):
+    """Handles fetching (GET) and updating (PUT) a single question."""
+    
+    if request.method == 'GET':
+        # --- Logic for Fetching (GET) ---
+        try:
+           
+            question_data = quiz_service.get_question_by_id(id) 
             
-        return jsonify(questions_list), 200
-    except Exception as e:
-        print(f"Error fetching questions by course: {e}")
-        return jsonify({"message": "Internal server error fetching questions."}), 500
-# vaidehi
+            if not question_data:
+                return jsonify({'message': 'Question not found'}), 404
+                
+            return jsonify(question_data), 200 
 
-# 7. APIs to fetch schools, programs, departments, and courses for dropdowns
+        except Exception as e:
+           
+            print(f"!!! ERROR during GET for ID {id}: {e}") 
+            return jsonify({'message': 'Internal Server Error during fetch.'}), 500
+
+    elif request.method == 'PUT':
+        # --- Logic for Updating (PUT) ---
+        try:
+            data = request.get_json()
+            
+            updated_q = quiz_service.update_question(id, data) 
+            
+            if not updated_q:
+                return jsonify({'message': 'Question not found or update failed'}), 404
+                
+            return jsonify({'message': 'Question updated successfully', 'question': updated_q}), 200 # <-- CRITICAL: Return response status
+
+        except Exception as e:
+           
+            print(f"!!! ERROR during PUT for ID {id}: {e}")
+            return jsonify({'message': 'Internal Server Error during update.'}), 500
+    elif request.method == 'DELETE':
+        # --- Logic for Deleting (DELETE) ---
+        try:
+            # Call the service layer to delete the question and related options
+            success = quiz_service.delete_question(id) 
+            
+            if not success:
+                return jsonify({'message': 'Question not found or deletion failed'}), 404
+                
+            return jsonify({'message': 'Question deleted successfully'}), 200
+
+        except Exception as e:
+            print(f"!!! ERROR during DELETE for ID {id}: {e}")
+            return jsonify({'message': 'Internal Server Error during deletion.'}), 500
+    
+    return jsonify({'message': 'Method not allowed'}), 405
+    
+
+
+# @professor_bp.route('/questions/by_course/<int:course_id>', methods=['GET'])
+# @professor_required
+# def get_questions_by_course_api(course_id):
+#     try:
+#         # Call the new service function
+#         questions_list = fetch_questions_by_course(course_id)
+        
+#         if not questions_list:
+#             return jsonify({"message": "No questions found for this course."}), 200
+            
+#         return jsonify(questions_list), 200
+#     except Exception as e:
+#         print(f"Error fetching questions by course: {e}")
+#         return jsonify({"message": "Internal server error fetching questions."}), 500
+# # vaidehi
+# backend/routes/professor.py
+
+@professor_bp.route('/my-courses', methods=['GET'])
+@professor_required
+def get_my_courses():
+    teacher_id = session.get('id')
+    courses = quiz_service.get_courses_for_teacher(teacher_id)
+    return jsonify(courses), 200
+
 @professor_bp.route('/schools', methods=['GET'])
 @professor_required
 def get_schools():
@@ -183,7 +223,6 @@ def get_schools():
     finally:
         cursor.close()
         conn.close()#vaidehi
-
     # cur = mysql.connection.cursor()
     # cur.execute("SELECT id, school_name FROM school") # Matches your image
     # data = cur.fetchall()
@@ -193,81 +232,68 @@ def get_schools():
     # school_list = [{'id': row[0], 'school_name': row[1]} for row in data]
     # return jsonify(school_list)
 
-# @professor_bp.route('/departments', methods=['GET'])
-# @professor_required
-# def fetch_departments_list_view(): 
-#     program_id_raw = request.args.get('program_id')
-#     if not program_id_raw:
-#         return jsonify([]), 200
-
-#     conn = get_db_connection()
-#     cursor = conn.cursor(pymysql.cursors.DictCursor)
-#     try:
-#         # 🚀 JOIN logic using confirmed junction table name: dept_program
-#         sql = """
-#             SELECT d.id, d.dept_name 
-#             FROM department d
-#             JOIN dept_program dp ON d.id = dp.dept_id
-#             WHERE dp.program_id = %s
-#         """
-#         cursor.execute(sql, (int(program_id_raw),))
-#         data = cursor.fetchall()
-#         return jsonify(data), 200
-#     except Exception as e:
-#         print(f"!!! Error fetching departments: {e}")
-#         return jsonify({"message": "Database query error"}), 500
-#     finally:
-#         cursor.close()
-#         conn.close() # tanishka
-
+@professor_bp.route('/programs', methods=['GET'])
+@professor_required
+def get_programs():
+    school_id = request.args.get('school_id')
+    if not school_id:
+        return jsonify([]), 200
+    conn = get_db_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    
+    try:
+        sql_query = """
+            SELECT id, program_name 
+            FROM program 
+            WHERE school_id = %s
+        """
+        cursor.execute("SELECT id, program_name FROM program WHERE school_id = %s", (school_id,))
+        data = cursor.fetchall()
+        return jsonify(data), 200
+    except Exception as e:
+        print(f"Error fetching programs: {e}")
+        return jsonify({"message": "Database error fetching programs."}), 500
+    finally:
+        cursor.close()
+        conn.close()#vaidehi
+  
 @professor_bp.route('/departments', methods=['GET'])
 @professor_required
 def fetch_departments_list_view(): 
-    # 1. Capture the selected program ID from the React frontend
     program_id_raw = request.args.get('program_id')
-    
+    print(f"DEBUG: Fetching departments for Program ID: {program_id_raw}")
     if not program_id_raw:
         return jsonify([]), 200
 
-    conn = None
-    cursor = None
+    conn = get_db_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     try:
-        program_id_int = int(program_id_raw)
-
-        conn = get_db_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        
-        # 🚀 THE JOIN FIX: 
-        # We select the actual department data (d)
-        # by joining with the junction table (dp) 
-        # using the matching dept_id and the selected program_id.
+        # 🚀 JOIN logic using confirmed junction table name: dept_program
         sql = """
             SELECT d.id, d.dept_name 
             FROM department d
             JOIN dept_program dp ON d.id = dp.dept_id
             WHERE dp.program_id = %s
         """
-        
-        cursor.execute(sql, (program_id_int,))
+        cursor.execute(sql, (int(program_id_raw),))
         data = cursor.fetchall()
-        
-        # This will return the list of departments to your frontend dropdown
         return jsonify(data), 200
-
     except Exception as e:
-        print(f"!!! Error in fetch_departments_list_view: {e}")
+        print(f"!!! Error fetching departments: {e}")
         return jsonify({"message": "Database query error"}), 500
     finally:
-        if cursor: cursor.close()
-        if conn: conn.close()#vaidehi
+        cursor.close()
+        conn.close()
+ 
 
-# 8. API to fetch courses based on department and semester
 @professor_bp.route('/courses', methods=['GET'])
 @professor_required
 def fetch_courses_list_view():
     dept_id_raw = request.args.get('dept_id')
     semester_id_raw = request.args.get('semester')
     
+    print(f"DEBUG: Courses req -> Dept: {dept_id_raw}, Sem: {semester_id_raw}")
+
     if not dept_id_raw or not semester_id_raw:
         return jsonify([]), 200
 
@@ -302,7 +328,16 @@ def fetch_courses_list_view():
         if cursor: cursor.close()
         if conn: conn.close()
     #vaidehi
-
+  
+@professor_bp.route('/questions/by_course/<int:course_id>', methods=['GET'])
+@professor_required
+def fetch_questions_by_course_view(course_id):
+    try:
+        questions_list = quiz_service.fetch_questions_by_course(course_id)
+        return jsonify(questions_list if questions_list else []), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"message": "Internal server error"}), 500#vaidehi
 # def get_questions_by_course():
 #     course_id = request.args.get('course_id')
     
@@ -323,56 +358,55 @@ def fetch_courses_list_view():
         
 #     return jsonify(questions_list)
 
-# pri
-# 10. API to fetch/update a single question
-@professor_bp.route('/questions/<int:id>', methods=['GET', 'PUT'])
-@professor_required
-def handle_single_question(id):
-    """
-    Handles fetching (GET) and updating (PUT) a single question by ID.
-    The GET method loads data into the edit form.
-    The PUT method saves the form data back to the database.
-    """
+#pri
+# @professor_bp.route('/questions/<int:id>', methods=['GET', 'PUT'])
+# @professor_required
+# def handle_single_question(id):
+#     """
+#     Handles fetching (GET) and updating (PUT) a single question by ID.
+#     The GET method loads data into the edit form.
+#     The PUT method saves the form data back to the database.
+#     """
     
-    # --- 1. GET Method: Fetch Question Data for Edit Form ---
-    if request.method == 'GET':
-        try:
-            # Call the service layer to fetch the structured question data
-            question_data = quiz_service.get_question_by_id(id) 
+#     # --- 1. GET Method: Fetch Question Data for Edit Form ---
+#     if request.method == 'GET':
+#         try:
+#             # Call the service layer to fetch the structured question data
+#             question_data = quiz_service.get_question_by_id(id) 
             
-            if not question_data:
-                # Returns 404 if the question ID is valid but not found in the DB
-                return jsonify({'message': 'Question not found'}), 404
+#             if not question_data:
+#                 # Returns 404 if the question ID is valid but not found in the DB
+#                 return jsonify({'message': 'Question not found'}), 404
                 
-            # Success: Return the question data to pre-fill the React form
-            return jsonify(question_data), 200 
+#             # Success: Return the question data to pre-fill the React form
+#             return jsonify(question_data), 200 
 
-        except Exception as e:
-            # Catches database connection issues or query failures
-            print(f"!!! ERROR during GET for question ID {id}: {e}") 
-            return jsonify({'message': 'Internal Server Error during fetch.'}), 500
+#         except Exception as e:
+#             # Catches database connection issues or query failures
+#             print(f"!!! ERROR during GET for question ID {id}: {e}") 
+#             return jsonify({'message': 'Internal Server Error during fetch.'}), 500
 
-    # --- 2. PUT Method: Update Question Data from Edit Form ---
-    elif request.method == 'PUT':
-        try:
-            # Get the JSON payload sent by the React form
-            data = request.get_json()
+#     # --- 2. PUT Method: Update Question Data from Edit Form ---
+#     elif request.method == 'PUT':
+#         try:
+#             # Get the JSON payload sent by the React form
+#             data = request.get_json()
             
-            # Call the service layer to execute the database update transaction
-            # This service function must handle updating the question_bank and answer_map.
-            success = quiz_service.update_question(id, data) 
+#             # Call the service layer to execute the database update transaction
+#             # This service function must handle updating the question_bank and answer_map.
+#             success = quiz_service.update_question(id, data) 
             
-            if not success:
-                # Returns 404 if the ID is not found or update transaction failed
-                return jsonify({'message': 'Question not found or update failed.'}), 404
+#             if not success:
+#                 # Returns 404 if the ID is not found or update transaction failed
+#                 return jsonify({'message': 'Question not found or update failed.'}), 404
                 
-            # Success: Return confirmation
-            return jsonify({'message': 'Question updated successfully!'}), 200
+#             # Success: Return confirmation
+#             return jsonify({'message': 'Question updated successfully!'}), 200
 
-        except Exception as e:
-            # Catches errors during update (e.g., transaction failure, invalid JSON)
-            print(f"!!! ERROR during PUT for question ID {id}: {e}")
-            return jsonify({'message': 'Internal Server Error during update.'}), 500
+#         except Exception as e:
+#             # Catches errors during update (e.g., transaction failure, invalid JSON)
+#             print(f"!!! ERROR during PUT for question ID {id}: {e}")
+#             return jsonify({'message': 'Internal Server Error during update.'}), 500
 
-    # Fallback for methods not allowed (though Flask usually handles this)
-    return jsonify({'message': 'Method not allowed'}), 405#vaidehi
+#     # Fallback for methods not allowed (though Flask usually handles this)
+#     return jsonify({'message': 'Method not allowed'}), 405#vaidehi

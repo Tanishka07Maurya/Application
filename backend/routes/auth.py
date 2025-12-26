@@ -1,16 +1,10 @@
 from flask import Blueprint, request, jsonify, session
 from ..services.auth_service import AuthService
 
-# Blueprint
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
-# Service
 auth_service = AuthService()
 
-# ✅ Mac compatibility - support both localhost and 127.0.0.1
-ALLOWED_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000']
-
-# ----------------- Signup -----------------
 @auth_bp.route('/signup', methods=['POST', 'OPTIONS'])
 def signup():
     if request.method == 'OPTIONS':
@@ -36,7 +30,6 @@ def signup():
         print(f"Error during signup: {e}")
         return jsonify({"message": "An internal server error occurred"}), 500
 
-# ----------------- Login -----------------
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -51,20 +44,15 @@ def login():
     if user:
         master_id = getattr(user, 'master_id', None)
         user_id = master_id if master_id else getattr(user, 'id', None)
-
-        # ⚠️ FIX: AGGRESSIVE SESSION CLEAR
-        # This completely wipes the old session data before setting new keys, 
-        # guaranteeing a fresh, small cookie.
-        session.clear()
         
         session['logged_in'] = True
         session['id'] = user_id
         session['role'] = getattr(user, 'role', 'student')
-        
+                
         return jsonify({
             "message": "Login successful",
             "user": {
-                "id": user.master_id,
+                "id": user_id,
                 "name": user.username,
                 "role": session['role']
             }
@@ -72,21 +60,17 @@ def login():
     else:
         return jsonify({"message": "Invalid credentials"}), 401
 
-# ----------------- Logout -----------------
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
-    
     session.clear()
     return jsonify({"message": "Logout successful"}), 200
 
-# ----------------- Get Profile -----------------
 @auth_bp.route('/profile', methods=['GET'])
 def get_profile():
-    
     if session.get('logged_in'):
         user_id = session.get('id')
         if not user_id:
-             return jsonify({"message": "User ID not found in session."}), 401
+            return jsonify({"message": "User ID not found in session."}), 401
         
         user_details = auth_service.get_user_by_id(user_id)
         if user_details:
