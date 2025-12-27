@@ -450,52 +450,77 @@ def get_professor_quizzes(teacher_id):
 
 
 def generate_and_save_quiz(teacher_id, course_id):
+    """Generates a quiz using questions for the selected course.
+    Prefer questions created by the teacher; if none exist, fall back to course-wide pool."""
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
     try:
-        # 1. Fetch 10 random questions for THIS teacher AND THIS course
-        query = """
+        if not course_id:
+            print("DEBUG: generate_and_save_quiz called without course_id")
+            return None
+
+        # 1a. Try teacher + course questions first
+        query_teacher_course = """
             SELECT qb.id FROM question_bank qb
             JOIN question_employee qe ON qb.id = qe.question_id
             JOIN question_course qc ON qb.id = qc.question_id
             WHERE qe.employee_id = %s AND qc.course_id = %s
             ORDER BY RAND() LIMIT 10
         """
-        cursor.execute(query, (teacher_id, course_id))
+        cursor.execute(query_teacher_course, (teacher_id, course_id))
         selected_questions = cursor.fetchall()
 
+        used_teacher_filter = True
+
+        # 1b. If none found, fall back to any question for the course
         if not selected_questions:
-            return None
-        
+            print(f"DEBUG: No teacher-specific questions found for teacher_id={teacher_id}, course_id={course_id}. Falling back to course-wide pool.")
+            fallback_query = """
+                SELECT qb.id FROM question_bank qb
+                JOIN question_course qc ON qb.id = qc.question_id
+                WHERE qc.course_id = %s
+                ORDER BY RAND() LIMIT 10
+            """
+            cursor.execute(fallback_query, (course_id,))
+            selected_questions = cursor.fetchall()
+            used_teacher_filter = False
+
+            if not selected_questions:
+                print(f"DEBUG: No questions found for course_id={course_id} at all.")
+                return None
+
         # 2. Generate unique token for the link
         quiz_token = str(uuid.uuid4())[:12]
         # This link points to your React route where the preview/quiz happens
         quiz_link = f"http://localhost:3000/take-quiz/{quiz_token}"
-        
-        # 3. Store Quiz Metadata
+
+        # 3. Store Quiz Metadata (record whether teacher filter was used in quiz_status_note)
         insert_quiz = """
             INSERT INTO quizzes (teacher_id, course_id, quiz_title, quiz_link, quiz_token, quiz_status)
             VALUES (%s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(insert_quiz, 
-                       (teacher_id, 
-                        course_id, 
-                        f"Quiz for Course {course_id}", 
-                        quiz_link, 
+        cursor.execute(insert_quiz,
+                       (teacher_id,
+                        course_id,
+                        f"Quiz for Course {course_id}",
+                        quiz_link,
                         quiz_token, "active"
                         ))
         quiz_id = cursor.lastrowid
 
         # 4. Save specific questions for this unique quiz instance
         for q in selected_questions:
+            # row may have key 'id' or first column depending on cursor
+            qid = q.get('id') if isinstance(q, dict) else q[0]
             cursor.execute(
-                "INSERT INTO quiz_questions_generated (quiz_id, question_id) VALUES (%s, %s)", 
-                (quiz_id, q['id'])
+                "INSERT INTO quiz_questions_generated (quiz_id, question_id) VALUES (%s, %s)",
+                (quiz_id, qid)
             )
 
         conn.commit()
-        return {"id": quiz_id, "quiz_link": quiz_link, "token": quiz_token}
+        return {"id": quiz_id, "quiz_link": quiz_link, "token": quiz_token, "used_teacher_filter": used_teacher_filter, "question_count": len(selected_questions)}
     finally:
+        cursor.close()
         conn.close()
 
 # 4. Fetch Quiz Preview Details ❤️❤️❤️❤️❤️

@@ -88,11 +88,18 @@ def generate_quiz_api():
         if not quiz_data:
             return jsonify({"message": "No questions found for this course."}), 404
         
-        return jsonify({
+        # Provide metadata to frontend if fallback was used
+        response_payload = {
             "message": "Quiz generated and saved successfully.",
             "quiz_link": quiz_data['quiz_link'],
-            "quiz_id": quiz_data['id']
-        }), 201
+            "quiz_id": quiz_data['id'],
+            "question_count": quiz_data.get('question_count', 0),
+            "used_teacher_filter": quiz_data.get('used_teacher_filter', True)
+        }
+        if not response_payload['used_teacher_filter']:
+            response_payload['message'] += " (Note: no teacher-specific questions found; used course-wide pool)"
+
+        return jsonify(response_payload), 201
     except Exception as e:
         return jsonify({"message": f"Quiz generation failed: {str(e)}"}), 500
     
@@ -338,6 +345,51 @@ def fetch_courses_list_view():
         if cursor: cursor.close()
         if conn: conn.close()
     #vaidehi
+
+
+@professor_bp.route('/course-stats', methods=['GET'])
+@professor_required
+def course_stats():
+    """Returns counts for questions for a course and teacher"""
+    course_id_raw = request.args.get('course_id')
+    if not course_id_raw:
+        return jsonify({'message': 'course_id required'}), 400
+
+    try:
+        course_id = int(course_id_raw)
+    except ValueError:
+        return jsonify({'message': 'invalid course_id'}), 400
+
+    teacher_id = session.get('id')
+    conn = get_db_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+    try:
+        cursor.execute("SELECT COUNT(DISTINCT question_id) AS total_for_course FROM question_course WHERE course_id = %s", (course_id,))
+        total_row = cursor.fetchone() or {'total_for_course': 0}
+
+        cursor.execute(
+            """
+            SELECT COUNT(DISTINCT qe.question_id) AS teacher_for_course
+            FROM question_employee qe
+            JOIN question_course qc ON qe.question_id = qc.question_id
+            WHERE qe.employee_id = %s AND qc.course_id = %s
+            """,
+            (teacher_id, course_id)
+        )
+        teacher_row = cursor.fetchone() or {'teacher_for_course': 0}
+
+        return jsonify({
+            'course_id': course_id,
+            'total_for_course': total_row.get('total_for_course', 0),
+            'teacher_for_course': teacher_row.get('teacher_for_course', 0)
+        }), 200
+    except Exception as e:
+        print(f"Error in course_stats: {e}")
+        return jsonify({'message': 'Internal server error'}), 500
+    finally:
+        cursor.close()
+        conn.close()
   
 @professor_bp.route('/questions/by_course/<int:course_id>', methods=['GET'])
 @professor_required
