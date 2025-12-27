@@ -101,6 +101,9 @@ def generate_quiz_api():
 
         return jsonify(response_payload), 201
     except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"DEBUG: Exception in generate_quiz_api: {e}")
         return jsonify({"message": f"Quiz generation failed: {str(e)}"}), 500
     
 # 4. API to fetch quiz preview data ❤️❤️❤️❤️❤️

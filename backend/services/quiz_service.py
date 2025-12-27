@@ -470,6 +470,8 @@ def generate_and_save_quiz(teacher_id, course_id):
         cursor.execute(query_teacher_course, (teacher_id, course_id))
         selected_questions = cursor.fetchall()
 
+        print(f"DEBUG: teacher+course selected_questions count: {len(selected_questions)}; rows: {selected_questions}")
+
         used_teacher_filter = True
 
         # 1b. If none found, fall back to any question for the course
@@ -483,42 +485,51 @@ def generate_and_save_quiz(teacher_id, course_id):
             """
             cursor.execute(fallback_query, (course_id,))
             selected_questions = cursor.fetchall()
+
+            print(f"DEBUG: course-wide selected_questions count: {len(selected_questions)}; rows: {selected_questions}")
+
             used_teacher_filter = False
 
             if not selected_questions:
                 print(f"DEBUG: No questions found for course_id={course_id} at all.")
                 return None
 
-        # 2. Generate unique token for the link
-        quiz_token = str(uuid.uuid4())[:12]
-        # This link points to your React route where the preview/quiz happens
-        quiz_link = f"http://localhost:3000/take-quiz/{quiz_token}"
+        try:
+            # 2. Generate unique token for the link
+            quiz_token = str(uuid.uuid4())[:12]
+            # This link points to your React route where the preview/quiz happens
+            quiz_link = f"http://localhost:3000/take-quiz/{quiz_token}"
 
-        # 3. Store Quiz Metadata (record whether teacher filter was used in quiz_status_note)
-        insert_quiz = """
-            INSERT INTO quizzes (teacher_id, course_id, quiz_title, quiz_link, quiz_token, quiz_status)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """
-        cursor.execute(insert_quiz,
-                       (teacher_id,
-                        course_id,
-                        f"Quiz for Course {course_id}",
-                        quiz_link,
-                        quiz_token, "active"
-                        ))
-        quiz_id = cursor.lastrowid
+            # 3. Store Quiz Metadata (record whether teacher filter was used in quiz_status_note)
+            insert_quiz = """
+                INSERT INTO quizzes (teacher_id, course_id, quiz_title, quiz_link, quiz_token, quiz_status)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(insert_quiz,
+                           (teacher_id,
+                            course_id,
+                            f"Quiz for Course {course_id}",
+                            quiz_link,
+                            quiz_token, "active"
+                            ))
+            quiz_id = cursor.lastrowid
 
-        # 4. Save specific questions for this unique quiz instance
-        for q in selected_questions:
-            # row may have key 'id' or first column depending on cursor
-            qid = q.get('id') if isinstance(q, dict) else q[0]
-            cursor.execute(
-                "INSERT INTO quiz_questions_generated (quiz_id, question_id) VALUES (%s, %s)",
-                (quiz_id, qid)
-            )
+            # 4. Save specific questions for this unique quiz instance
+            for q in selected_questions:
+                # row may have key 'id' or first column depending on cursor
+                qid = q.get('id') if isinstance(q, dict) else q[0]
+                print(f"DEBUG: Inserting quiz_questions_generated for quiz_id={quiz_id}, question_id={qid}")
+                cursor.execute(
+                    "INSERT INTO quiz_questions_generated (quiz_id, question_id) VALUES (%s, %s)",
+                    (quiz_id, qid)
+                )
 
-        conn.commit()
-        return {"id": quiz_id, "quiz_link": quiz_link, "token": quiz_token, "used_teacher_filter": used_teacher_filter, "question_count": len(selected_questions)}
+            conn.commit()
+            return {"id": quiz_id, "quiz_link": quiz_link, "token": quiz_token, "used_teacher_filter": used_teacher_filter, "question_count": len(selected_questions)}
+        except Exception as e:
+            conn.rollback()
+            print(f"ERROR: Exception while saving quiz or questions: {e}")
+            raise
     finally:
         cursor.close()
         conn.close()
