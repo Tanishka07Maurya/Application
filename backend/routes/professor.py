@@ -105,6 +105,29 @@ def generate_quiz_api():
         traceback.print_exc()
         print(f"DEBUG: Exception in generate_quiz_api: {e}")
         return jsonify({"message": f"Quiz generation failed: {str(e)}"}), 500
+
+
+# Dry-run endpoint to inspect candidate questions without creating the quiz
+@professor_bp.route('/generate-dry', methods=['GET'])
+@professor_required
+def generate_dry_api():
+    try:
+        teacher_id = session.get('id')
+        course_id_raw = request.args.get('course_id')
+        if not course_id_raw:
+            return jsonify({"message": "course_id is required"}), 400
+        course_id = int(course_id_raw)
+
+        result = quiz_service.get_candidate_questions(teacher_id, course_id)
+        if result is None:
+            return jsonify({"message": "Failed to fetch candidate questions"}), 500
+
+        return jsonify(result), 200
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"DEBUG: Exception in generate_dry_api: {e}")
+        return jsonify({"message": f"Error: {str(e)}"}), 500
     
 # 4. API to fetch quiz preview data ❤️❤️❤️❤️❤️
 @professor_bp.route('/quiz-preview/<token>', methods=['GET'])
