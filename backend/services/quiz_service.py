@@ -449,6 +449,57 @@ def get_professor_quizzes(teacher_id):
         conn.close()
 
 
+def get_candidate_questions(teacher_id, course_id):
+    """Return question IDs that would be used for a generated quiz (no DB writes).
+    Tries teacher+course first, then falls back to course-wide pool."""
+    conn = get_db_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    try:
+        if not course_id:
+            return { 'question_ids': [], 'used_teacher_filter': True, 'count': 0 }
+
+        # teacher + course
+        query_teacher_course = """
+            SELECT qb.id FROM question_bank qb
+            JOIN question_employee qe ON qb.id = qe.question_id
+            JOIN question_course qc ON qb.id = qc.question_id
+            WHERE qe.employee_id = %s AND qc.course_id = %s
+            ORDER BY RAND() LIMIT 10
+        """
+        cursor.execute(query_teacher_course, (teacher_id, course_id))
+        selected = cursor.fetchall()
+
+        used_teacher_filter = True
+
+        if not selected:
+            # fallback
+            fallback_query = """
+                SELECT qb.id FROM question_bank qb
+                JOIN question_course qc ON qb.id = qc.question_id
+                WHERE qc.course_id = %s
+                ORDER BY RAND() LIMIT 10
+            """
+            cursor.execute(fallback_query, (course_id,))
+            selected = cursor.fetchall()
+            used_teacher_filter = False
+
+        ids = []
+        for row in selected:
+            if isinstance(row, dict):
+                ids.append(row.get('id'))
+            else:
+                ids.append(row[0])
+
+        return { 'question_ids': ids, 'used_teacher_filter': used_teacher_filter, 'count': len(ids) }
+
+    except Exception as e:
+        print(f"Error in get_candidate_questions: {e}")
+        return None
+    finally:
+        cursor.close()
+        conn.close()
+
+
 def generate_and_save_quiz(teacher_id, course_id):
     """Generates a quiz using questions for the selected course.
     Prefer questions created by the teacher; if none exist, fall back to course-wide pool."""
