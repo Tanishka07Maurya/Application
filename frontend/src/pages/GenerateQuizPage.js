@@ -243,7 +243,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { 
-  fetchSchools, fetchPrograms, fetchDepartments, fetchCourses, generateQuiz 
+  fetchSchools, fetchPrograms, fetchDepartments, fetchCourses, generateQuiz, fetchCourseStats 
 } from '../api/apiService'; 
 import Button from '../components/forms/Button'; 
 
