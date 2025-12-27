@@ -320,8 +320,24 @@ export default function GenerateQuizPage() {
     }
   };
 
-  const handleCourseChange = (e) => {
-    setSelections({ ...selections, course: e.target.value });
+  const [courseStats, setCourseStats] = useState(null);
+
+  const handleCourseChange = async (e) => {
+    const course = e.target.value;
+    setSelections({ ...selections, course });
+
+    if (!course) {
+      setCourseStats(null);
+      return;
+    }
+
+    try {
+      const statsRes = await fetchCourseStats(course);
+      setCourseStats(statsRes.data || null);
+    } catch (err) {
+      console.error('Failed to fetch course stats:', err);
+      setCourseStats(null);
+    }
   };
 
   // --- GENERATE QUIZ LOGIC ---❤️❤️❤️❤️❤️
@@ -337,8 +353,14 @@ const handleGenerateQuiz = async () => {
         const res = await generateQuiz(selections.course);
 
         if (res.status === 201) {
-            setGeneratedLink(res.data.quiz_link); 
-            alert("Quiz generated and saved successfully!");
+            setGeneratedLink(res.data.quiz_link);
+            const usedTeacher = res.data.used_teacher_filter;
+            const count = res.data.question_count || 0;
+            if (usedTeacher === false) {
+                alert(`Quiz generated using course pool with ${count} questions (no teacher-specific questions found).`);
+            } else {
+                alert(`Quiz generated and saved successfully with ${count} questions.`);
+            }
         }
     } catch (error) {
         if (error.response && error.response.status === 403) {
@@ -423,6 +445,12 @@ const handleGenerateQuiz = async () => {
         {/* ✅ GRID CONTAINER END */}
 
         {/* Generate Button */}
+        {courseStats && (
+          <div style={{ marginTop: '16px', textAlign: 'center', color: '#333' }}>
+            <strong>Course Questions:</strong> {courseStats.total_for_course || 0} • <strong>Your Questions:</strong> {courseStats.teacher_for_course || 0}
+          </div>
+        )}
+
         <div style={{marginTop: '30px', textAlign: 'center'}}>
             <Button 
                 label={loading ? "Generating..." : "Generate Quiz"} 
