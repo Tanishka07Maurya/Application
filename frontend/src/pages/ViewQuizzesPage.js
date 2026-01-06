@@ -53,7 +53,10 @@ export default function ViewQuizzesPage() {
   };
 
   const handleReviewEdit = (token) => {
-    // 🚀 FIX: Navigate to the correct preview route using the token
+    if (!token) {
+        alert("Error: This quiz has no token.");
+        return;
+    }
     window.location.href = `/take-quiz/${token}`;
   };
 
@@ -109,7 +112,13 @@ export default function ViewQuizzesPage() {
                 <thead>
                   <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #e5e7eb' }}>
                     <th style={headerStyle}>Quiz Title</th>
-                    <th style={headerStyle}>Course ID</th>
+                    <th style={headerStyle}>Teacher</th>
+                    <th style={headerStyle}>School</th>
+                    <th style={headerStyle}>Department</th>
+                    <th style={headerStyle}>Program</th>
+                    <th style={headerStyle}>Semester</th>
+                    <th style={headerStyle}>Course</th>
+                    <th style={headerStyle}>Qs</th>
                     <th style={headerStyle}>Status</th>
                     <th style={headerStyle}>Quiz Link</th>
                     <th style={headerStyle}>Generated On</th>
@@ -119,8 +128,16 @@ export default function ViewQuizzesPage() {
                 <tbody>
                   {quizzes.map((quiz, index) => (
                     <tr key={quiz.id} style={{ backgroundColor: index % 2 === 0 ? 'white' : '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                      <td style={cellStyle}>{quiz.quiz_title || 'Untitled'}</td>
-                      <td style={cellStyle}>{quiz.course_id}</td>
+                      <td style={cellStyle}>{quiz.quiz_title || quiz.title || 'Untitled'}</td>
+                      <td style={cellStyle}>{quiz.teacher || '-'}</td>
+                      <td style={cellStyle}>{quiz.school || '-'}</td>
+                      <td style={cellStyle}>{quiz.department || '-'}</td>
+                      <td style={cellStyle}>{quiz.program || '-'}</td>
+                      <td style={cellStyle}>{quiz.semester || '-'}</td>
+                      <td style={cellStyle}>{quiz.course || quiz.course_id || '-'}</td>
+                      <td style={{ ...cellStyle, textAlign: 'center' }}>
+                         {quiz.total_questions || quiz.totalQuestions || 0}
+                      </td>
                       <td style={cellStyle}>
                         <span style={{
                           padding: '4px 12px',
@@ -134,12 +151,12 @@ export default function ViewQuizzesPage() {
                         </span>
                       </td>
                       <td style={cellStyle}>
-                        {/* 🚀 FIX: Link directly to the correct internal route using the TOKEN */}
                         <a 
                           href={`/take-quiz/${quiz.token}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: '#2563eb', textDecoration: 'underline', cursor: 'pointer' }}
+                          style={{ color: '#2563eb', 
+                            textDecoration: 'underline'}}
                         >
                           Open Quiz
                         </a>

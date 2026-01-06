@@ -350,30 +350,137 @@ def fetch_questions_by_course(course_id):
         cursor.close()
         conn.close()
 
-# 7. Generate Quiz  ❤️❤️❤️❤️❤️
+# 7. Delete Question
+def delete_question(question_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Delete related data first due to foreign key constraints
+        cursor.execute("DELETE FROM answer_map WHERE question_id = %s", (question_id,))
+        cursor.execute("DELETE FROM question_course WHERE question_id = %s", (question_id,))
+        # Delete the question itself
+        delete_count = cursor.execute("DELETE FROM question_bank WHERE id = %s", (question_id,))
+        
+        conn.commit()
+        return delete_count > 0
+
+    except Exception as e:
+        conn.rollback()
+        print(f"Transaction failed for question deletion (ID {question_id}): {e}")
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
+# 8. Generate and Save Quiz ❤️❤️❤️❤️❤️
+def generate_and_save_quiz(teacher_id, course_id, teacher_name):
+    conn = get_db_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    try:
+        sql_context = """
+            SELECT 
+                s.school_name,
+                p.program_name,
+                d.dept_name,
+                sc.semester_id,
+                c.course_name
+            FROM course c
+            JOIN semester_course sc ON c.id = sc.course_id
+            JOIN department_semester ds ON sc.semester_id = ds.semester_id
+            JOIN department d ON ds.dept_id = d.id
+            JOIN dept_program dp ON d.id = dp.dept_id
+            JOIN program p ON dp.program_id = p.id
+            JOIN school s ON p.school_id = s.id
+            WHERE c.id = %s 
+            LIMIT 1
+        """
+        
+        cursor.execute(sql_context, (course_id))
+        meta = cursor.fetchone()
+
+        school_name = meta['school_name'] if meta else "N/A"
+        dept_name = meta['dept_name'] if meta else "N/A"
+        prog_name = meta['program_name'] if meta else "N/A"
+        sem_name = f"Semester {meta['semester_id']}" if meta else "N/A"
+        course_name = meta['course_name'] if meta else "N/A"
+        print(f"DEBUG: Generating quiz for Course: {course_name}")
+
+        query_q = """
+            SELECT qb.id FROM question_bank qb
+            JOIN question_employee qe ON qb.id = qe.question_id
+            JOIN question_course qc ON qb.id = qc.question_id
+            WHERE qe.employee_id = %s AND qc.course_id = %s
+            ORDER BY RAND() LIMIT 10
+        """
+        cursor.execute(query_q, (teacher_id, course_id))
+        selected_questions = cursor.fetchall()
+
+        if not selected_questions: return None
+
+        count = len(selected_questions)
+
+        quiz_token = str(uuid.uuid4())[:12]
+        quiz_link = f"http://localhost:3000/take-quiz/{quiz_token}"
+        
+        insert_quiz = """
+            INSERT INTO quizzes (
+                teacher_id, course_id, quiz_title, quiz_link, quiz_token, quiz_status, total_questions,
+                teacher, school, department, program, semester, course
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(insert_quiz, (
+            teacher_id, 
+            course_id, 
+            f"Quiz: {course_name}", 
+            quiz_link, 
+            quiz_token, 
+            "Published",
+            count,
+            teacher_name, 
+            school_name,  
+            dept_name,    
+            prog_name,    
+            sem_name,     
+            course_name   
+        ))
+        quiz_id = cursor.lastrowid
+
+        for q in selected_questions:
+            # 🚀 LOWERCASE TABLE NAME HERE TO MATCH DB
+            cursor.execute("INSERT INTO quiz_questions_generated (quiz_id, question_id) VALUES (%s, %s)", (quiz_id, q['id']))
+
+        conn.commit()
+        return {"id": quiz_id, "quiz_link": quiz_link, "token": quiz_token, "question_count": count}
+    finally:
+        conn.close()
+
+# 9. ADD THIS NEW FUNCTION ❤️❤️❤️❤️❤️
 def get_professor_quizzes(teacher_id):
-    """Returns a list of quizzes created by the professor with basic metadata."""
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
     try:
         sql = """
-            SELECT id, quiz_title, quiz_link, quiz_token, course_id, quiz_status, created_at
-            FROM quizzes WHERE teacher_id = %s ORDER BY id DESC
+            SELECT 
+                id, quiz_title, teacher, school, department, program, 
+                semester, course, total_questions, 
+                quiz_status AS status, 
+                quiz_link, 
+                quiz_token AS token, 
+                created_at 
+            FROM quizzes 
+            WHERE teacher_id = %s 
+            ORDER BY created_at DESC
         """
         cursor.execute(sql, (teacher_id,))
-        rows = cursor.fetchall()
-        quizzes = []
-        for r in rows:
-            quizzes.append({
-                'id': r['id'],
-                'quiz_title': r.get('quiz_title'),
-                'quiz_link': r.get('quiz_link'),
-                'token': r.get('quiz_token'),
-                'course_id': r.get('course_id'),
-                'status': r.get('quiz_status'),
-                'created_at': r.get('created_at')
-            })
-        return quizzes
+        results = cursor.fetchall()
+        
+        # Convert datetime objects to string
+        for row in results:
+            if row['created_at']:
+                row['created_at'] = row['created_at'].isoformat()
+                
+        return results
     except Exception as e:
         print(f"Error fetching professor quizzes: {e}")
         return []
@@ -381,7 +488,7 @@ def get_professor_quizzes(teacher_id):
         cursor.close()
         conn.close()
 
-# 8. Get Quiz Preview ❤️❤️❤️❤️❤️
+# 10. Get Quiz Preview ❤️❤️❤️❤️❤️
 def get_quiz_preview_details(token):
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
@@ -432,28 +539,6 @@ def get_quiz_preview_details(token):
     except Exception as e:
         print(f"Error fetching preview: {e}")
         return None
-    finally:
-        cursor.close()
-        conn.close()
-
-# 9. Delete Question
-def delete_question(question_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        # Delete related data first due to foreign key constraints
-        cursor.execute("DELETE FROM answer_map WHERE question_id = %s", (question_id,))
-        cursor.execute("DELETE FROM question_course WHERE question_id = %s", (question_id,))
-        # Delete the question itself
-        delete_count = cursor.execute("DELETE FROM question_bank WHERE id = %s", (question_id,))
-        
-        conn.commit()
-        return delete_count > 0
-
-    except Exception as e:
-        conn.rollback()
-        print(f"Transaction failed for question deletion (ID {question_id}): {e}")
-        return False
     finally:
         cursor.close()
         conn.close()

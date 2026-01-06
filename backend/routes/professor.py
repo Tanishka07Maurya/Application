@@ -243,11 +243,12 @@ def get_quizzes_api():
 def generate_quiz_api():
     try:
         teacher_id = session.get('id')
+        teacher_name = session.get('username', 'Professor')
         data = request.get_json()
         course_id = data.get('course_id') 
         if not teacher_id:
             return jsonify({"message": "User ID not found"}), 400    
-        quiz_data = quiz_service.generate_and_save_quiz(teacher_id, course_id)
+        quiz_data = quiz_service.generate_and_save_quiz(teacher_id, course_id, teacher_name)
         if not quiz_data:
             return jsonify({"message": "No questions found for this course."}), 404
         response_payload = {
